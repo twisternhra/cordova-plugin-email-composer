@@ -32,6 +32,7 @@ import android.database.MatrixCursor;
 import android.net.Uri;
 import android.os.ParcelFileDescriptor;
 import android.provider.MediaStore;
+import android.util.Log;
 import android.webkit.MimeTypeMap;
 
 public class AttachmentProvider extends ContentProvider {
@@ -53,6 +54,7 @@ public class AttachmentProvider extends ContentProvider {
     public ParcelFileDescriptor openFile(Uri uri, String mode) throws FileNotFoundException {
 		switch(uriMatcher.match(uri)) {
 			case 1:
+				Log.v("","IOException: "+uri);
 				String fileLocation = getContext().getCacheDir() + File.separator + uri.getLastPathSegment();
 				ParcelFileDescriptor pfd = ParcelFileDescriptor.open(new File(fileLocation), ParcelFileDescriptor.MODE_READ_ONLY);
 				return pfd;

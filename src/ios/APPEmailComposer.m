@@ -35,7 +35,7 @@
 - (void) setSubject:(NSString*)subject ofDraft:(MFMailComposeViewController*)draft;
 // Setzt den Text der Mail
 - (void) setBody:(NSString*)body ofDraft:(MFMailComposeViewController*)draft isHTML:(BOOL)isHTML;
-// Setzt die Empfänger der Mail
+// Setzt die Empfänger der Mail≠
 - (void) setToRecipients:(NSArray*)recipients ofDraft:(MFMailComposeViewController*)draft;
 // Setzt die CC-Empfänger der Mail
 - (void) setCcRecipients:(NSArray*)ccRecipients ofDraft:(MFMailComposeViewController*)draft;
@@ -176,16 +176,21 @@
 {
     if (attatchments)
     {
-        for (NSString* path in attatchments)
+        for (NSDictionary* attachment in attatchments)
         {
-            NSData* data       = [self getDataForAttachmentPath:path];
+//            NSData* data       = [self getDataForAttachmentPath:path];
+            NSString* filePath = [attachment valueForKey:@"filePath"];
+            NSString* attachmentName = [attachment valueForKey:@"attachmentName"];
+            
+            NSFileManager* fileManager = [NSFileManager defaultManager];
+            NSData* data = [fileManager contentsAtPath:filePath];
 
-            NSString* basename = [self getBasenameFromAttachmentPath:path];
+            NSString* basename = [self getBasenameFromAttachmentPath:filePath];
             NSString* pathExt  = [basename pathExtension];
-            NSString* fileName = [basename pathComponents].lastObject;
+//            NSString* fileName = [basename pathComponents].lastObject;
             NSString* mimeType = [self getMimeTypeFromFileExtension:pathExt];
 
-            [draft addAttachmentData:data mimeType:mimeType fileName:fileName];
+            [draft addAttachmentData:data mimeType:mimeType fileName:attachmentName];
         }
     }
 }
@@ -237,34 +242,36 @@
 /**
  * Returns the data for a given (relative) attachments path.
  */
-- (NSData*) getDataForAttachmentPath:(NSString*)path
-{
-    NSFileManager* fileManager = [NSFileManager defaultManager];
-
-    if ([path hasPrefix:@"absolute://"])
-    {
-        NSString* absolutePath = [path stringByReplacingOccurrencesOfString:@"absolute://" withString:@"/"];
-
-        return [fileManager contentsAtPath:absolutePath];
-    }
-    else if ([path hasPrefix:@"relative://"])
-    {
-        NSString* bundlePath   = [[[NSBundle mainBundle] bundlePath] stringByAppendingString:@"/"];
-        NSString* absolutePath = [path stringByReplacingOccurrencesOfString:@"relative://" withString:@""];
-
-        absolutePath = [bundlePath stringByAppendingString:absolutePath];
-
-        return [fileManager contentsAtPath:absolutePath];
-    }
-    else if ([path hasPrefix:@"base64:"])
-    {
-        NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"^base64:[^/]+.." options:NSRegularExpressionCaseInsensitive error:Nil];
-        NSString *dataString = [regex stringByReplacingMatchesInString:path options:0 range:NSMakeRange(0, [path length]) withTemplate:@""];
-
-        return [NSData dataFromBase64String:dataString];
-    }
-
-    return [fileManager contentsAtPath:path];
-}
+//- (NSData*) getDataForAttachmentDictionary:(NSDictionary*)path
+//{
+//    NSFileManager* fileManager = [NSFileManager defaultManager];
+//
+//    if ([path hasPrefix:@"absolute://"])
+//    {
+//        NSString* absolutePath = [path stringByReplacingOccurrencesOfString:@"absolute://" withString:@"/"];
+//        
+//        
+//
+//        return [fileManager contentsAtPath:absolutePath];
+//    }
+//    else if ([path hasPrefix:@"relative://"])
+//    {
+//        NSString* bundlePath   = [[[NSBundle mainBundle] bundlePath] stringByAppendingString:@"/"];
+//        NSString* absolutePath = [path stringByReplacingOccurrencesOfString:@"relative://" withString:@""];
+//
+//        absolutePath = [bundlePath stringByAppendingString:absolutePath];
+//
+//        return [fileManager contentsAtPath:absolutePath];
+//    }
+//    else if ([path hasPrefix:@"base64:"])
+//    {
+//        NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"^base64:[^/]+.." options:NSRegularExpressionCaseInsensitive error:Nil];
+//        NSString *dataString = [regex stringByReplacingMatchesInString:path options:0 range:NSMakeRange(0, [path length]) withTemplate:@""];
+//
+//        return [NSData dataFromBase64String:dataString];
+//    }
+//
+//    return [fileManager contentsAtPath:path];
+//}
 
 @end

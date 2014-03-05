@@ -24,7 +24,9 @@ package de.appplant.cordova.plugin.emailcomposer;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 
 import org.json.JSONArray;
@@ -39,9 +41,11 @@ import android.net.Uri;
 import android.os.Environment;
 import android.text.Html;
 import android.util.Base64;
+import android.util.Log;
 
 import org.apache.cordova.CordovaPlugin;
 import org.apache.cordova.CallbackContext;
+import org.apache.cordova.LOG;
 import org.apache.cordova.PluginResult;
 
 public class EmailComposer extends CordovaPlugin {
@@ -188,11 +192,12 @@ public class EmailComposer extends CordovaPlugin {
      * Fügt die Anhände zur Mail hinzu.
      */
     private void setAttachments (JSONArray attachments, Intent draft) throws JSONException {
+    	Log.v("","ATTACHMENTS: "+attachments);
         ArrayList<Uri> attachmentUris = new ArrayList<Uri>();
 
         for (int i = 0; i < attachments.length(); i++) {
-            Uri attachmentUri = getUriForPath(attachments.getString(i));
-
+//            Uri attachmentUri = getUriForPath(attachments.getString(i));
+        	Uri attachmentUri = getUriForAttachObj(attachments.getJSONObject(i));
             attachmentUris.add(attachmentUri);
         }
 
@@ -212,6 +217,49 @@ public class EmailComposer extends CordovaPlugin {
     /**
      * Retrieves the URI for a given path.
      */
+    private Uri getUriForAttachObj (JSONObject attachment){
+    	
+    	String pathType = attachment.optString("pathType");
+    	String filePath = attachment.optString("filePath");
+    	String attachmentName = attachment.optString("attachmentName");
+    	
+    	if (pathType.equalsIgnoreCase("asset")){
+    		filePath = filePath.replace("/android_asset/", "");
+    		
+			String storage = this.cordova.getActivity().getCacheDir() + "/";
+			
+			File file = new File(storage, attachmentName);
+			
+			new File(storage).mkdir();
+			FileOutputStream os = null;
+			try {
+				os = new FileOutputStream(file, false);
+
+			} catch (FileNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+        	InputStream inputStream;
+			try {
+				inputStream = this.cordova.getActivity().getAssets().open(filePath);
+			    byte buf[]=new byte[1024];
+		        int len;
+		        while((len=inputStream.read(buf))>0)
+		            os.write(buf,0,len);
+		        os.close();
+		        inputStream.close();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+
+			return Uri.parse("content://" + AttachmentProvider.AUTHORITY + "/" + attachmentName);
+    	} else{
+    		return null;
+    	}
+		
+    	
+    }
     private Uri getUriForPath (String path) {
         if (path.startsWith("relative://")) {
             String resPath = path.replaceFirst("relative://", "");
@@ -266,6 +314,39 @@ public class EmailComposer extends CordovaPlugin {
             }
 
             return Uri.parse("content://" + AttachmentProvider.AUTHORITY + "/" + resName);
+        } else if (path.startsWith("assets:")) {
+        	
+        	String resName = path.substring(path.indexOf(":") + 1, path.indexOf("//"));
+        	String resPath = path.replaceFirst("assets:" + resName + "//", "/");
+			String storage = this.cordova.getActivity().getCacheDir() + "/email_composer";
+			
+			File file = new File(storage, resName);
+			
+			new File(storage).mkdir();
+			FileOutputStream os = null;
+			try {
+				os = new FileOutputStream(file, true);
+
+			} catch (FileNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+        	InputStream inputStream;
+			try {
+				inputStream = this.cordova.getActivity().getAssets().open(resPath);
+			    byte buf[]=new byte[1024];
+		        int len;
+		        while((len=inputStream.read(buf))>0)
+		            os.write(buf,0,len);
+		        os.close();
+		        inputStream.close();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+
+			return Uri.parse("content://" + AttachmentProvider.AUTHORITY + "/" + resName);
+       
         }
 
         return Uri.parse(path);
